@@ -50,7 +50,13 @@ def main( argv )
 
 	@descriptors = Array::new
 
+	if argv.length < 1
+		puts "Usage: ruby rsocket.rb <port>"
+		return
+	end
+
 	port = argv[0]
+	
 	@serverSocket = TCPServer.new("", port)
 	@serverSocket.setsockopt( Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1 )
 	@descriptors << @serverSocket
