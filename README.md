@@ -7,7 +7,7 @@ Generic ruby socket server
   
     ruby rsocket.rb <port>
   
-  Sample:
+  Example:
   
     ruby rsocket.rb 10000
 
