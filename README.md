@@ -1,5 +1,16 @@
 rsocket
 =======
+Some bootstrap script for socket server in various languages..
+
+
+
+Generic tcl socket server
+  
+  Usage:
+
+    tclsh tclsocket.tcl <port>
+
+
 
 Generic ruby socket server
 
