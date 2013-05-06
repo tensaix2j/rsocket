@@ -1,18 +1,8 @@
 rsocket
 =======
-Some bootstrap script for socket server in various languages..
+Some bootstrap scripts for socket server in various languages..
 
-
-
-Generic tcl socket server
-  
-  Usage:
-
-    tclsh tclsocket.tcl <port>
-
-
-
-Generic ruby socket server
+Ruby
 
   Usage:
   
@@ -21,6 +11,22 @@ Generic ruby socket server
   Example:
   
     ruby rsocket.rb 10000
+
+
+
+
+Tcl  
+  Usage:
+
+    tclsh tclsocket.tcl <port>
+
+  Example:
+  
+    tclsh tclsocket.tcl 10000
+
+MSVC++
+  Compile wsocket.cpp under MSVC++. 
+  
 
 
 
