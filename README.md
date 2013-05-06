@@ -3,7 +3,7 @@ rsocket
 Some bootstrap scripts for socket server in various languages..
 
 Ruby
-
+-----
   Usage:
   
     ruby rsocket.rb <port>
@@ -15,7 +15,8 @@ Ruby
 
 
 
-Tcl  
+Tcl
+----
   Usage:
 
     tclsh tclsocket.tcl <port>
@@ -25,6 +26,8 @@ Tcl
     tclsh tclsocket.tcl 10000
 
 MSVC++
+-------
+  
   Compile wsocket.cpp under MSVC++. 
   
 
