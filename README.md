@@ -28,7 +28,7 @@ Tcl
 MSVC++
 -------
   
-  Compile wsocket.cpp under MSVC++. 
+  Compile winsocket.cpp under MSVC++. 
   
 
 
