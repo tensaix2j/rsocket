@@ -4,9 +4,8 @@
 # Author: tensaix2j
 #
 # Websocket server
-# based on RFC 6455, RFC 5234
+# based on RFC 6455
 # 
-#   not finished yet...
 # -----------------------------------
 
 
@@ -14,6 +13,8 @@ require 'rubygems'
 require 'socket'
 require "base64"
 require 'digest/sha1'
+
+$MAXSIZE = 65544
 
 
 #--------
@@ -39,10 +40,9 @@ def settle_incoming_msg( sock )
 
 		else
 
-			msg = sock.read_nonblock(1024)
-			puts "#{ sock }: #{msg}"
-			
-			dispatch_msg( msg  , sock)
+			raw_msg = sock.read_nonblock($MAXSIZE)
+			process_msg( raw_msg  , sock)
+
 		end
 	
 	rescue
@@ -52,15 +52,67 @@ end
 
 
 
-#----------------
-def dispatch_msg( msg , sock ) 
-	
-	msg_arr = msg.gsub("\r\n","\n").split("\n")
+#-------------
+def extract_msg( raw_msg , msg ) 
+
+		fin    		=   ( raw_msg[0] >> 7 ) & 0x01
+		rsv1   		=   ( raw_msg[0] >> 6 ) & 0x01
+		rsv2   		=   ( raw_msg[0] >> 5 ) & 0x01
+		rsv3   		=   ( raw_msg[0] >> 4 ) & 0x01			 
+		opcode 		=     raw_msg[0]  & 0x0f
+		maskflag   	=   ( raw_msg[1] >> 7 ) & 0x01
+		len    		=     raw_msg[1] & 0x7f
+		offset 		=   2
 		
-	if msg_arr.length > 0
+		if len == 127 
+		
+			offset += 8
+			len =  (raw_msg[2].to_i << 56) + ( raw_msg[3].to_i << 48) \
+				 + (raw_msg[4].to_i << 40) + ( raw_msg[5].to_i << 32) \
+				 + (raw_msg[6].to_i << 24) + ( raw_msg[7].to_i << 16) \
+				 + (raw_msg[8].to_i << 8)  + ( raw_msg[9].to_i )	
 
-		if msg_arr[0][/GET/]
+		elsif len >= 126
+			
+			offset += 2
+			len = ( raw_msg[2].to_i << 8 ) + raw_msg[3].to_i
+			
+		end
 
+		mask = []
+		(0...4).each { |i|
+			mask[i] = raw_msg[offset + i] 
+		}
+		offset += 4
+
+		puts "opcode #{opcode}"
+		puts "len #{len}"
+		puts "maskflag #{maskflag}"
+		puts "offset #{offset}\n\n" 
+
+		# TEXT
+		if opcode == 0x01 
+
+			(0...len).each { |i|
+
+				msg << ( raw_msg[offset + i] ^ mask[i % 4] ).chr
+
+			}
+		end
+end
+
+
+
+#----------------
+def process_msg( raw_msg , sock ) 
+	
+		
+	if raw_msg.length > 0
+
+		if raw_msg[0...10][/GET/]
+
+			msg_arr = raw_msg.gsub("\r\n","\n").split("\n")
+			
 			ws_key = nil
 			msg_arr.each { |line|
 
@@ -81,43 +133,9 @@ def dispatch_msg( msg , sock )
 
 		else
 			
-			fin    =   ( msg_arr[0][0] >> 7 ) & 0x01
-			rsv1   =   ( msg_arr[0][0] >> 6 ) & 0x01
-			rsv2   =   ( msg_arr[0][0] >> 5 ) & 0x01
-			rsv3   =   ( msg_arr[0][0] >> 4 ) & 0x01			 
-			opcode =     msg_arr[0][0]  & 0x0f
-			mask   =   ( msg_arr[0][1] >> 7 ) & 0x01
-			
-			len    =     msg_arr[0][1] & 0x7f
-			offset =   2
-			
-			if len == 127 
-				offset += 8
-			
-			elsif len >= 126
-				offset += 2
-			end
-
-			mask = []
-			(0...4).each { |i|
-				mask[i] = msg_arr[0][offset + i] 
-			}
-			offset += 4
-
-			puts "opcode #{opcode}"
-			puts "len #{len}"
-			puts "offset #{offset}\n\n" 
-
-			# TEXT
-			if opcode == 0x01 
-
-				(0...len).each { |i|
-
-					printf ( msg_arr[0][offset + i] ^ mask[i % 4] ).chr
-
-				}
-				
-			end
+			msg = ""
+			extract_msg( raw_msg , msg )
+			puts msg
 
 		end
 
