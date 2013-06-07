@@ -52,54 +52,7 @@ end
 
 
 
-#-------------
-def extract_msg( raw_msg , msg ) 
 
-		fin    		=   ( raw_msg[0] >> 7 ) & 0x01
-		rsv1   		=   ( raw_msg[0] >> 6 ) & 0x01
-		rsv2   		=   ( raw_msg[0] >> 5 ) & 0x01
-		rsv3   		=   ( raw_msg[0] >> 4 ) & 0x01			 
-		opcode 		=     raw_msg[0]  & 0x0f
-		maskflag   	=   ( raw_msg[1] >> 7 ) & 0x01
-		len    		=     raw_msg[1] & 0x7f
-		offset 		=   2
-		
-		if len == 127 
-		
-			offset += 8
-			len =  (raw_msg[2].to_i << 56) + ( raw_msg[3].to_i << 48) \
-				 + (raw_msg[4].to_i << 40) + ( raw_msg[5].to_i << 32) \
-				 + (raw_msg[6].to_i << 24) + ( raw_msg[7].to_i << 16) \
-				 + (raw_msg[8].to_i << 8)  + ( raw_msg[9].to_i )	
-
-		elsif len >= 126
-			
-			offset += 2
-			len = ( raw_msg[2].to_i << 8 ) + raw_msg[3].to_i
-			
-		end
-
-		mask = []
-		(0...4).each { |i|
-			mask[i] = raw_msg[offset + i] 
-		}
-		offset += 4
-
-		puts "opcode #{opcode}"
-		puts "len #{len}"
-		puts "maskflag #{maskflag}"
-		puts "offset #{offset}\n\n" 
-
-		# TEXT
-		if opcode == 0x01 
-
-			(0...len).each { |i|
-
-				msg << ( raw_msg[offset + i] ^ mask[i % 4] ).chr
-
-			}
-		end
-end
 
 
 
@@ -133,10 +86,10 @@ def process_msg( raw_msg , sock )
 
 		else
 			
-			msg = ""
+			msg = ''
 			extract_msg( raw_msg , msg )
-			puts msg
-
+			
+						
 		end
 
 		
@@ -145,6 +98,78 @@ def process_msg( raw_msg , sock )
 end
 
 
+#-------------
+def extract_msg( raw_msg , msg ) 
+
+		fin    		=   ( raw_msg[0] >> 7 ) & 0x01
+		rsv1   		=   ( raw_msg[0] >> 6 ) & 0x01
+		rsv2   		=   ( raw_msg[0] >> 5 ) & 0x01
+		rsv3   		=   ( raw_msg[0] >> 4 ) & 0x01			 
+		opcode 		=     raw_msg[0]  & 0x0f
+		maskflag   	=   ( raw_msg[1] >> 7 ) & 0x01
+		len    		=     raw_msg[1] & 0x7f
+		offset 		=   2
+		
+		if len == 127 
+		
+			offset += 8
+			len =  (raw_msg[2].to_i << 56) + ( raw_msg[3].to_i << 48) \
+				 + (raw_msg[4].to_i << 40) + ( raw_msg[5].to_i << 32) \
+				 + (raw_msg[6].to_i << 24) + ( raw_msg[7].to_i << 16) \
+				 + (raw_msg[8].to_i << 8)  + ( raw_msg[9].to_i )	
+
+		elsif len >= 126
+			
+			offset += 2
+			len = ( raw_msg[2].to_i << 8 ) + raw_msg[3].to_i
+			
+		end
+
+		mask = []
+		(0...4).each { |i|
+			mask[i] = raw_msg[offset + i] 
+		}
+		offset += 4
+
+		if opcode == 0x01 
+
+			(0...len).each { |i|
+
+				msg << ( raw_msg[offset + i] ^ mask[i % 4] ).chr
+
+			}
+		end
+end
+
+
+
+#----------------------------------------
+def send_ws_frame( ws , application_data)
+
+	frame = ''
+
+	frame << 0x81
+
+	length = application_data.size
+	
+	if length <= 125
+	  byte2 = length
+	  frame << byte2
+	
+	elsif length < 65536 # write 2 byte length
+	  frame << 126
+	  frame << [length].pack('n')
+	
+	else # write 8 byte length
+	  frame << 127
+	  frame << [length >> 32, length & 0xFFFFFFFF].pack("NN")
+	end
+
+	frame << application_data
+
+	ws.write(frame)
+
+end
 
 
 #------------
