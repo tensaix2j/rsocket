@@ -16,6 +16,12 @@ require 'digest/sha1'
 
 $MAXSIZE = 65544
 
+$config = {
+	"-port" 	=> 10000,
+	"-debug"	=> 0
+}
+
+
 
 #--------
 def accept_new_connection( sock )
@@ -30,6 +36,8 @@ end
 
 #-----------
 def settle_incoming_msg( sock )
+
+	puts "<settle_incoming_msg>" if $config["-debug"].to_i > 3
 	
 	begin
 		if sock.eof? 
@@ -37,6 +45,7 @@ def settle_incoming_msg( sock )
 			sock.close
 			@descriptors.delete(sock)
 			@clients.delete( sock )
+			@wsclients.delete( sock )
 
 		else
 
@@ -45,9 +54,12 @@ def settle_incoming_msg( sock )
 
 		end
 	
-	rescue
-		puts "ERROR: #{$!}"
+	rescue Exception => e  
+		puts "ERROR: #{e.backtrace() }"
 	end
+
+	puts "<settle_incoming_msg> Done." if $config["-debug"].to_i > 3
+	
 end
 
 
@@ -59,9 +71,13 @@ end
 #----------------
 def process_msg( raw_msg , sock ) 
 	
-		
+	puts "<process_msg>: " if $config["-debug"].to_i > 2
+	puts "raw_msg: #{raw_msg} " if $config["-debug"].to_i > 4
+	
+	
 	if raw_msg.length > 0
 
+		# Websocket handshake
 		if raw_msg[0...10][/GET/]
 
 			msg_arr = raw_msg.gsub("\r\n","\n").split("\n")
@@ -82,20 +98,81 @@ def process_msg( raw_msg , sock )
 				guid 	= "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 				websocket_accept_key = Base64.encode64( Digest::SHA1.digest( "#{ws_key}#{guid}" ) )
 				sock.write "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: #{websocket_accept_key}\r\n"
+			
+				@wsclients << sock
 			end
 
 		else
 			
-			msg = ''
-			extract_msg( raw_msg , msg )
-			
+			# Websocket
+			if @wsclients.index( sock ) != nil
+
+				msg = ''
+				extract_msg( raw_msg , msg )
+				ws_onmessage( sock , msg )
+
+
+			# ordinary TCPIP socket
+			else
+				raw_onmessage( sock , raw_msg )
+			end		
 						
 		end
 
 		
 	end
 	
+	puts "<process_msg>: Done\n" if $config["-debug"].to_i > 2
 end
+
+
+
+#--------------------------
+def ws_onmessage( ws , msg )
+
+	puts "<ws_onmessage>: #{ws}" if $config["-debug"].to_i > 2
+	puts "Data :#{msg}" if $config["-debug"].to_i > 3
+
+	if msg[/topic_sample/] 
+		
+
+	end
+
+	puts "<ws_onmessage>: Done.\n" if $config["-debug"].to_i > 2
+	
+	
+end
+
+
+#-------------------
+def raw_onmessage( sock , data ) 
+
+	puts "<raw_onmessage>: #{sock}" if $config["-debug"].to_i > 2
+	puts "Data :#{data}" if $config["-debug"].to_i > 3
+
+	# Don't dispatch immediately
+	@buffer = '' if @buffer == nil
+	@buffer.concat(data.to_s)
+
+	if data && data.index("\n")
+		
+		@buffer.gsub("\r","").gsub("\n","")
+		raw_dispatch_msg( sock, @buffer )
+		@buffer = ""
+	end
+
+	puts "<raw_onmessage> Done.\n" if $config["-debug"].to_i > 2
+	
+end
+
+#-------------
+def raw_dispatch_msg( sock , msg ) 
+
+	if msg[/topic_sample/] 
+		
+	end
+end
+
 
 
 #-------------
@@ -175,14 +252,14 @@ end
 #------------
 def main( argv )
 
+	$config = $config.merge( Hash[*argv] )
+	
+	port =  $config["-port"] 
+	
+
 	@descriptors = Array::new
+	@wsclients = Array::new
 
-	if argv.length < 1
-		puts "Usage: ruby ws_rsocket.rb <port>"
-		return
-	end
-
-	port = argv[0]
 	
 	@serverSocket = TCPServer.new("", port)
 	@serverSocket.setsockopt( Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1 )
