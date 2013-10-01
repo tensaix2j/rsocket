@@ -1,6 +1,6 @@
 rsocket
 =======
-Some bootstrap scripts for socket server in various languages..
+Some socket server scripts for immediate use.
 
 Ruby
 -----
@@ -31,5 +31,10 @@ MSVC++
   Compile winsocket.cpp under MSVC++. 
   
 
+
+WebSocket
+---------
+  Usage:
+    ruby ws_rsocket.rb -port <port>
 
 
