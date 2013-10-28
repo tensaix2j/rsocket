@@ -1,16 +1,18 @@
 rsocket
 =======
-Some socket server scripts for immediate use.
+Some socket server scripts for quick use.
 
 Ruby
 -----
   Usage:
   
-    ruby rsocket.rb <port>
+    ruby r_tcp.rb <port>
+    ruby r_udp.rb <port>
   
   Example:
   
-    ruby rsocket.rb 10000
+    ruby r_tcp.rb 10000
+    ruby r_udp.rb 10000
 
 
 
@@ -19,16 +21,16 @@ Tcl
 ----
   Usage:
 
-    tclsh tclsocket.tcl <port>
+    tclsh tcl_tcp.tcl <port>
 
   Example:
   
-    tclsh tclsocket.tcl 10000
+    tclsh tcl_tcp.tcl 10000
 
 MSVC++
 -------
   
-  Compile winsocket.cpp under MSVC++. 
+  Compile win_tcp.cpp under MSVC++. 
   
 
 
