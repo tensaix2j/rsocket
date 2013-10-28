@@ -31,7 +31,8 @@ def settle_incoming_msg( sock )
 			dispatch_msg( msg  , sock)
 		end
 	
-	rescue
+	rescue Exception => e  
+		puts "ERROR: #{e.to_s}\n#{e.backtrace() }"
 	end
 end
 
@@ -78,7 +79,7 @@ def main( argv )
 	@descriptors = Array::new
 
 	if argv.length < 1
-		puts "Usage: ruby rsocket.rb <port>"
+		puts "Usage: ruby #{$0} <port>"
 		return
 	end
 
@@ -88,7 +89,7 @@ def main( argv )
 	@serverSocket.setsockopt( Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1 )
 	@descriptors << @serverSocket
 	@clients = []
-	printf "Server started on port %d\n", port
+	printf "TCP Server started on port %d\n", port
 	
 	while (1)
 		
