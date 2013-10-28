@@ -22,11 +22,14 @@ Tcl
   Usage:
 
     tclsh tcl_tcp.tcl <port>
+    tclsh tcl_udp.tcl <port>
 
   Example:
   
     tclsh tcl_tcp.tcl 10000
-
+    tclsh tcl_udp.tcl 10000
+    
+    
 MSVC++
 -------
   
