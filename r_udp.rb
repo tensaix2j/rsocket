@@ -4,7 +4,8 @@
 require 'rubygems'
 require 'socket'
 
-$MAXSIZE = 65536
+$MAXSIZE = 4096
+
 
 
 #-----------

@@ -7,7 +7,8 @@ require 'rubygems'
 require 'socket'
 
 
-$MAXSIZE = 65536
+$MAXSIZE = 4096
+
 
 $config = {
 	"host" 	=> "localhost",
@@ -21,7 +22,7 @@ def main( argc, argv )
 	p $config
 
 
-
+	# Connectionless UDP
 	sock = UDPSocket.new
 	sock.send "testing123", 0 , $config["host"], $config["port"]
 
