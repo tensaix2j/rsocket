@@ -158,7 +158,7 @@ def raw_onmessage( sock , data )
 		
 		@buffer.gsub("\r","").gsub("\n","")
 		raw_dispatch_msg( sock, @buffer )
-		@buffer = ""
+		@buffer.replace("")
 	end
 
 	puts "<raw_onmessage> Done.\n" if $config["-debug"].to_i > 2
@@ -178,75 +178,102 @@ end
 #-------------
 def extract_msg( raw_msg , msg ) 
 
-		fin    		=   ( raw_msg[0] >> 7 ) & 0x01
-		rsv1   		=   ( raw_msg[0] >> 6 ) & 0x01
-		rsv2   		=   ( raw_msg[0] >> 5 ) & 0x01
-		rsv3   		=   ( raw_msg[0] >> 4 ) & 0x01			 
-		opcode 		=     raw_msg[0]  & 0x0f
-		maskflag   	=   ( raw_msg[1] >> 7 ) & 0x01
-		len    		=     raw_msg[1] & 0x7f
-		offset 		=   2
-		
-		if len == 127 
-		
-			offset += 8
-			len =  (raw_msg[2].to_i << 56) + ( raw_msg[3].to_i << 48) \
-				 + (raw_msg[4].to_i << 40) + ( raw_msg[5].to_i << 32) \
-				 + (raw_msg[6].to_i << 24) + ( raw_msg[7].to_i << 16) \
-				 + (raw_msg[8].to_i << 8)  + ( raw_msg[9].to_i )	
+	fin    		=   ( raw_msg[0].ord >> 7 ) & 0x01
+	rsv1   		=   ( raw_msg[0].ord >> 6 ) & 0x01
+	rsv2   		=   ( raw_msg[0].ord >> 5 ) & 0x01
+	rsv3   		=   ( raw_msg[0].ord >> 4 ) & 0x01			 
+	opcode 		=     raw_msg[0].ord  & 0x0f
+	maskflag   	=   ( raw_msg[1].ord >> 7 ) & 0x01
+	len    		=     raw_msg[1].ord & 0x7f
+	offset 		=   2
 
-		elsif len >= 126
-			
-			offset += 2
-			len = ( raw_msg[2].to_i << 8 ) + raw_msg[3].to_i
-			
-		end
+	if len == 127 
 
-		mask = []
-		(0...4).each { |i|
-			mask[i] = raw_msg[offset + i] 
+		offset += 8
+		len =  (raw_msg[2].ord << 56) + ( raw_msg[3].ord << 48) \
+			 + (raw_msg[4].ord << 40) + ( raw_msg[5].ord << 32) \
+			 + (raw_msg[6].ord << 24) + ( raw_msg[7].ord << 16) \
+			 + (raw_msg[8].ord << 8)  + ( raw_msg[9].ord )	
+
+	elsif len == 126
+
+		offset += 2
+		len = ( raw_msg[2].ord << 8 ) + raw_msg[3].ord
+	end
+
+	mask = []
+	(0...4).each { |i|
+		mask[i] = raw_msg[offset + i] 
+	}
+
+	offset += 4
+	if opcode == 0x01 
+		(0...len).each { |i|
+			msg << ( raw_msg[offset + i] ^ mask[i % 4] ).chr
 		}
-		offset += 4
+	end
 
-		if opcode == 0x01 
-
-			(0...len).each { |i|
-
-				msg << ( raw_msg[offset + i] ^ mask[i % 4] ).chr
-
-			}
-		end
 end
+
 
 
 
 #----------------------------------------
-def send_ws_frame( ws , application_data)
+def send_ws_frame( ws , application_data )
 
-	frame = ''
+	if application_data.length <= 1024 
+		send_raw_ws_frame( ws, application_data , 1 , 1 )
+	else
 
-	frame << 0x81
+		(0...application_data.length).step(1024).each { |i|
 
-	length = application_data.size
-	
-	if length <= 125
-	  byte2 = length
-	  frame << byte2
-	
-	elsif length < 65536 # write 2 byte length
-	  frame << 126
-	  frame << [length].pack('n')
-	
-	else # write 8 byte length
-	  frame << 127
-	  frame << [length >> 32, length & 0xFFFFFFFF].pack("NN")
+			is_frame_head = 1 if i == 0
+			is_frame_last = 1 if i + 1024 >= application_data.length 
+			send_raw_ws_frame( ws, application_data[i...i+1024] , is_frame_head, is_frame_last )
+		}
 	end
-
-	frame << application_data
-
-	ws.write(frame)
-
 end
+
+
+
+#------------
+def send_raw_ws_frame( ws , application_data, is_frame_head , is_frame_last )
+
+	if application_data.length > 0 
+
+		frame = (( is_frame_head.to_i & 0x01 ) | ( is_frame_last.to_i << 7 )).chr
+		length = application_data.length
+
+
+		if length <= 125
+
+		  frame << length
+
+		elsif length < 65536 # write 2 byte length
+
+			frame << "\x7e"
+			frame << [length].pack('n')
+
+		else # write 8 byte length
+
+			frame << "\x7f"
+			frame << [length >> 32, length & 0xFFFFFFFF].pack("NN")
+		end
+
+		frame << application_data
+
+		begin
+
+			ws.write(frame)
+
+		rescue Exception => ex
+
+			puts "<send_ws_frame> Error sending to browser #{ ws }. #{ ex.to_s }.\n#{ frame.unpack("H*") }\n\n#{ ex.backtrace() }"
+
+		end
+	end	
+end
+
 
 
 #------------
