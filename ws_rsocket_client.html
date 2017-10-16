@@ -1,12 +1,15 @@
 <head>
 <script type="text/javascript">
+  
+
+  ans = 0;
 
   function WebSocketTest()
   {
     if ("WebSocket" in window)
     {
        
-       var ws = new WebSocket("ws://localhost:10000/echo");
+       var ws = new WebSocket("ws://localhost:6101/fmsd");
 
 
        ws.onopen = function() {
@@ -15,15 +18,25 @@
           console.log("onopen");  
 
           //ws.send("LMAOssdfdsfk;sdlfkds;lfkds ;lfkds ;lfkd f;ldskf ldsfksd ;fldskf ;ldskf ds;l sdfdsfdsfdsfdsfdsfdsfdsfld;slfsd;lfffffffffffffs;dlfd;slds;lfds;lf;dslfs;dlf;sdlf;dslf;dslfds;lfds;lfs;dlf;dsfl;dslf;sdlfds;lf;dslf;dslf;dsfl;dslfs;dlf;dsfl;dslf;dslf;dsl\n");
-          ws.send( "helloworld012345678 helloworld012345678 helloworld0123456789 helloworld0123456789 helloworld0123456789 helloworld0123456789 helloworld0123456789 helloworld0123456789 helloworld0123456789 helloworld0123456789 helloworld0123456789 helloworld0123456789 helloworld0123456789 helloworld0123456789\n")
-     
+          ws.send( "helloworld012345678 hellowo\n")
+          
+          setInterval( function() { 
+
+            ws.send("keep sending " + Math.random() + "\n");
+
+          }, 2000);
 
           //ws.send("hello"); 
        };
        
        ws.onmessage = function (evt) { 
+          
           var received_msg = evt.data;
-          console.log("Message is received..." + evt.data);
+          console.log("Message is received...", evt.data);
+
+          ans += 1;
+          console.log( ans );
+
        };
        
 

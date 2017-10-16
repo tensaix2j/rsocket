@@ -55,7 +55,7 @@ def settle_incoming_msg( sock )
 		end
 	
 	rescue Exception => e  
-		puts "ERROR: #{e.backtrace() }"
+		puts "ERROR: #{ e.to_s } #{e.backtrace() }"
 	end
 
 	puts "<settle_incoming_msg> Done." if $config["-debug"].to_i > 3
@@ -209,7 +209,7 @@ def extract_msg( raw_msg , msg )
 	offset += 4
 	if opcode == 0x01 
 		(0...len).each { |i|
-			msg << ( raw_msg[offset + i] ^ mask[i % 4] ).chr
+			msg << ( raw_msg[offset + i].ord ^ mask[i % 4] ).chr
 		}
 	end
 
