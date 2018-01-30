@@ -36,6 +36,8 @@ proc on_readable { sock } {
 #-----------
 proc on_connected { sock addr port } {
 
+	puts "$sock $addr $port connected"
+
 	fileevent $sock readable [list on_readable $sock ]
 	fconfigure $sock -buffering none -blocking 0
 		
